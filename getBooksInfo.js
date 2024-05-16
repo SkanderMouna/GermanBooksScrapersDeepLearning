@@ -7,18 +7,21 @@ const links = []
 const bookInfos = []
 
 async function acceptCookies(page) {
+    try {
+        await page.click('[title="Click to accept use of cookies"]');
+        await wait()
 
-    await page.click('[title="Click to accept use of cookies"]');
-    new Promise(resolve => {
-        setTimeout(resolve, 5000);
-    });
+    } catch (error) {
+
+        console.log("")
+    }
+
 }
 
 async function readFile() {
     const fileStream = fs.createReadStream(linksPath);
     const rl = readline.createInterface({
-        input: fileStream,
-        crlfDelay: Infinity
+        input: fileStream, crlfDelay: Infinity
     });
 
     for await (const link of rl) {
@@ -33,20 +36,17 @@ async function getter(page, selector) {
             return document.querySelector(selector).innerText
 
         }, selector)
-    }
-    catch (e)
-    {
+    } catch (e) {
         return ""
     }
 }
 
 async function getHref(page, selector) {
-    try{
-    return await page.evaluate((selector) => {
-        return document.querySelector(selector).getAttribute("data-request-href")
-    }, selector)}
-    catch (e)
-    {
+    try {
+        return await page.evaluate((selector) => {
+            return document.querySelector(selector).getAttribute("data-request-href")
+        }, selector)
+    } catch (e) {
         return ""
     }
 }
@@ -58,9 +58,7 @@ async function getBookDetails(page, index) {
             const value = document.querySelector(`.bibliographies>div:nth-child(${index})>span:nth-child(2)`).innerText
             return {[key]: value}
         }, index)
-    }
-    catch (e)
-    {
+    } catch (e) {
         return ""
     }
 
@@ -75,15 +73,23 @@ async function getAllBookDetails(page) {
         Object.assign(bookDetail, detail)
     }
     return bookDetail
+}
 
+async function wait() {
+    return new Promise(resolve => {
+        setTimeout(resolve, 5000);
+    });
 }
 
 async function getLongDescription(page) {
-    return await page.evaluate(() => {
-        document.querySelector(".product>.description>span>a").click()
-        const longDescription = document.querySelector(".dialogContent").innerText
-        window.history.back()
-        return longDescription
+
+    await page.evaluate(async () => {
+        return document.querySelector(".description>.button>a").click()
+    })
+    //await page.click(".description>.button>a")
+    await wait();
+    return await page.evaluate(async () => {
+        return document.querySelector(".dialogContent").innerText
     })
 }
 
@@ -98,9 +104,7 @@ async function getBookInfo(page) {
     const binding = await getter(page, ".biblioBinding")
     const frontCover = await getHref(page, "span[title='Show big cover image']>a")
     const backCover = await getHref(page, "span[title='Show back cover image']>a")
-    //const longDescription = await getLongDescription(page)
-    //TODO there is a problem on getting the long description
-    const longDescription=""
+    const longDescription = await getLongDescription(page)
     bookInfo = {
         Title: bookTitle,
         Short_Description: bookDescription,
@@ -148,6 +152,7 @@ async function writeFile() {
 
     })
 }
+
 async function getAllInfo() {
     const browser = await puputeer.launch({headless: false, args: ["--start-maximixed"]})
     let page = await browser.newPage()

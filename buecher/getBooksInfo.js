@@ -23,6 +23,7 @@ async function scrapeBookInfo(url, page, category) {
     const urlsFilePath = 'BooksUrls.txt';
     const outputFilePath = '../ScrapedBooks/booksInfo-buecher.json';
 
+
     let scrapedData = [];
 
     // Read existing data from the output file if it exists
